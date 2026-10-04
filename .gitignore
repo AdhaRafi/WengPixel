@@ -1,0 +1,26 @@
+# Android build & local files
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/**/build/
+android/.idea/
+*.apk
+*.aab
+
+# Python & Backend
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/**/.pytest_cache/
+backend/.env
+backend/venv/
+backend/.venv/
+backend/env/
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+*.iml
+.idea/
+.vscode/
