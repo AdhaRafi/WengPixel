@@ -50,6 +50,7 @@ class EditorViewModel @Inject constructor(
 
     // Referensi bitmap mentah transparan sebelum diberi warna latar
     private var baseTransparentBitmap: Bitmap? = null
+    private var processingJob: kotlinx.coroutines.Job? = null
 
     fun initializeImage(filePath: String, initialTool: String = "ALL") {
         viewModelScope.launch(dispatchers.io) {
@@ -108,9 +109,24 @@ class EditorViewModel @Inject constructor(
         _uiState.update { it.copy(selectedScaleFactor = scale) }
     }
 
+    fun cancelProcessing() {
+        processingJob?.cancel()
+        processingJob = null
+        _uiState.update {
+            it.copy(
+                isProcessing = false,
+                errorMessage = null
+            )
+        }
+        viewModelScope.launch {
+            _messages.emit(EditorMessage.Info("Proses AI dibatalkan."))
+        }
+    }
+
     fun applyRemoveBackground() {
         val currentBitmap = _uiState.value.currentWorkingBitmap ?: return
-        viewModelScope.launch {
+        processingJob?.cancel()
+        processingJob = viewModelScope.launch {
             _uiState.update {
                 it.copy(
                     isProcessing = true,
@@ -120,7 +136,16 @@ class EditorViewModel @Inject constructor(
             }
 
             val tempFile = withContext(dispatchers.io) {
-                fileManager.saveBitmapToTempCache(currentBitmap, Bitmap.CompressFormat.PNG)
+                // Optimasi transmisi: batasi dimensi upload maks 1920px agar respons instan di jaringan
+                val maxDim = 1920
+                val uploadBitmap = if (currentBitmap.width > maxDim || currentBitmap.height > maxDim) {
+                    val ratio = currentBitmap.width.toFloat() / currentBitmap.height.toFloat()
+                    val (w, h) = if (ratio > 1f) maxDim to (maxDim / ratio).toInt() else (maxDim * ratio).toInt() to maxDim
+                    Bitmap.createScaledBitmap(currentBitmap, w, h, true)
+                } else {
+                    currentBitmap
+                }
+                fileManager.saveBitmapToTempCache(uploadBitmap, Bitmap.CompressFormat.PNG)
             }
 
             removeBackgroundUseCase(tempFile).collect { result ->
@@ -174,7 +199,8 @@ class EditorViewModel @Inject constructor(
 
     fun applyUpscale(scaleFactor: ScaleFactor = _uiState.value.selectedScaleFactor) {
         val currentBitmap = _uiState.value.currentWorkingBitmap ?: return
-        viewModelScope.launch {
+        processingJob?.cancel()
+        processingJob = viewModelScope.launch {
             _uiState.update {
                 it.copy(
                     isProcessing = true,

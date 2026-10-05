@@ -371,7 +371,10 @@ fun EditorScreen(
 
         // Overlay Saat AI Memproses
         if (uiState.isProcessing) {
-            ProcessingLoadingOverlay(message = uiState.processingMessage)
+            ProcessingLoadingOverlay(
+                message = uiState.processingMessage,
+                onCancel = { viewModel.cancelProcessing() }
+            )
         }
     }
 }

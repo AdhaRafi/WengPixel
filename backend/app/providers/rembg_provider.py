@@ -40,21 +40,19 @@ class RembgLocalProvider(ImageProcessorProvider):
         input_image = Image.open(io.BytesIO(image_bytes))
         input_image = input_image.convert("RGBA")
 
-        # Proses penghapusan latar belakang dengan alpha matting
+        # Proses penghapusan latar belakang instan berbasis neural network u2net
         output_image = self._rembg.remove(
             input_image,
             session=self._session,
-            alpha_matting=True,
-            alpha_matting_foreground_threshold=240,
-            alpha_matting_background_threshold=10,
-            alpha_matting_erode_size=10
+            alpha_matting=False,
+            post_process_mask=True
         )
 
         width, height = output_image.size
 
         # Simpan ke format PNG RGBA untuk mempertahankan transparansi sejati
         output_buffer = io.BytesIO()
-        output_image.save(output_buffer, format="PNG", optimize=True)
+        output_image.save(output_buffer, format="PNG")
         return output_buffer.getvalue(), width, height
 
     def upscale(self, image_bytes: bytes, scale: int) -> Tuple[bytes, int, int]:

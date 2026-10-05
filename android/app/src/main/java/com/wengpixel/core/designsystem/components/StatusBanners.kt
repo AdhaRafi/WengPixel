@@ -116,8 +116,15 @@ fun ServerWarningBanner(
 @Composable
 fun ProcessingLoadingOverlay(
     message: String = "Sedang memproses AI...",
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onCancel: (() -> Unit)? = null
 ) {
+    if (onCancel != null) {
+        androidx.activity.compose.BackHandler {
+            onCancel()
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -153,6 +160,16 @@ fun ProcessingLoadingOverlay(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                if (onCancel != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    androidx.compose.material3.OutlinedButton(
+                        onClick = onCancel,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Batalkan Proses")
+                    }
+                }
             }
         }
     }
